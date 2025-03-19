@@ -1,1 +1,67 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Monitorizare Ventilatoare - Secțiunea 1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: url('ventilator.jpg') no-repeat center center fixed;
+            background-size: cover;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+        }
+        .status {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            background: #28a745;
+            color: white;
+        }
+        .button {
+            display: inline-block;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 10px;
+            text-decoration: none;
+            color: white;
+            transition: 0.3s;
+            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
+        }
+        .green { background: #28a745; }
+        .red { background: #dc3545; }
+        .button:hover { opacity: 0.9; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
+        <div id="status" class="status">✅ Ventilatorul funcționează normal</div>
+        <a href="index.html" class="button green">🔙 Înapoi la Meniu</a>
+    </div>
+</body>
+</html>
 

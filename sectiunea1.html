@@ -50,9 +50,12 @@
             color: white;
             transition: 0.3s;
             box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
+            margin: 10px;
+            cursor: pointer;
         }
-        .green { background: #808080; }
+        .green { background: #28a745; }
         .red { background: #dc3545; }
+        .gray { background: #808080; }
         .button:hover { opacity: 0.9; transform: scale(1.05); }
     </style>
 </head>
@@ -60,7 +63,36 @@
     <div class="container">
         <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
         <div id="status" class="status">✅ Ventilatoarele funcționează normal!</div>
-        <a href="index.html" class="button green">🔙 Înapoi la Meniu</a>
+
+        <!-- Butoane control -->
+        <button class="button red" onclick="sendCommand('oprire')">⛔ Oprește Ventilatoarele</button>
+        <button class="button green" onclick="sendCommand('pornire')">▶️ Pornește Ventilatoarele</button>
+
+        <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
     </div>
+
+    <script>
+        function sendCommand(comanda) {
+            const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot/comanda.json?auth=DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
+
+            fetch(firebaseURL, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(comanda)
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Comanda '" + comanda + "' a fost trimisă cu succes!");
+                } else {
+                    alert("Eroare la trimiterea comenzii.");
+                }
+            })
+            .catch(error => {
+                alert("Eroare de rețea: " + error);
+            });
+        }
+    </script>
 </body>
 </html>

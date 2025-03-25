@@ -100,93 +100,129 @@
     </div>
 
     <script>
-        const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
-        const firebaseAuthToken = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn"; // <- Înlocuiește cu tokenul tău real
+    const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
+    const firebaseAuthToken = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn"; // <- Înlocuiește cu tokenul tău real
 
-        // Trimitere comandă (pornire/oprire)
-        function sendCommand(comanda) {
-            fetch(`${firebaseURL}/comanda.json?auth=${firebaseAuthToken}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(comanda)
-            })
-            .then(res => res.ok ? alert(`Comanda '${comanda}' a fost trimisă.`) : alert("Eroare la trimitere."))
-            .catch(err => alert("Eroare rețea: " + err));
+    const statusBox = document.getElementById('status');
+
+    function updateStatusBox(state) {
+        if (state === "ok") {
+            statusBox.style.background = "#28a745";
+            statusBox.textContent = "✅ Ventilatoarele funcționează normal!";
+        } else if (state === "avertizare") {
+            statusBox.style.background = "#dc3545";
+            statusBox.textContent = "⚠️ Atenție! Verificați ventilatoarele!";
+        } else if (state === "oprit") {
+            statusBox.style.background = "#808080";
+            statusBox.textContent = "⛔ Ventilatoarele sunt oprite manual.";
         }
+    }
 
-        // Grafic
-        const ctx = document.getElementById('decibelChart').getContext('2d');
-        const decibelChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Nivel dB',
-                    data: [],
-                    borderColor: 'green',
-                    backgroundColor: 'rgba(0, 255, 0, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: { title: { display: true, text: 'Timp (UTC)' }},
-                    y: { title: { display: true, text: 'dB' }, suggestedMin: 30, suggestedMax: 80 }
-                }
+    // Trimitere comandă (pornire/oprire)
+    function sendCommand(comanda) {
+        fetch(`${firebaseURL}/comanda.json?auth=${firebaseAuthToken}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(comanda)
+        })
+        .then(res => {
+            if (res.ok) {
+                alert(`Comanda '${comanda}' a fost trimisă.`);
+                if (comanda === "oprire") updateStatusBox("oprit");
+                else if (comanda === "pornire") updateStatusBox("ok");
+            } else {
+                alert("Eroare la trimitere.");
             }
+        })
+        .catch(err => alert("Eroare rețea: " + err));
+    }
+
+    const ctx = document.getElementById('decibelChart').getContext('2d');
+    const decibelChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Nivel dB',
+                data: [],
+                borderColor: 'green',
+                backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: 'Timp (UTC)' }},
+                y: { title: { display: true, text: 'dB' }, suggestedMin: 30, suggestedMax: 80 }
+            }
+        }
+    });
+
+    // Stare avertizare locală (pentru control resetare)
+    let alertaActiva = false;
+
+    async function loadChartData() {
+        const res = await fetch(`${firebaseURL}/citiri.json?auth=${firebaseAuthToken}`);
+        const data = await res.json();
+        if (!data) return;
+
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const labels = [];
+        const values = [];
+
+        Object.entries(data).sort().forEach(([timestamp, value]) => {
+            const time = new Date(timestamp);
+            if (isNaN(time.getTime()) || time < sevenDaysAgo) return;
+
+            const formatted = timestamp.slice(11, 19); // doar ora:min:sec
+            labels.push(formatted);
+            values.push(value);
         });
 
-        // Încarcă date în grafic
-        async function loadChartData() {
-            const res = await fetch(`${firebaseURL}/citiri.json?auth=${firebaseAuthToken}`);
-            const data = await res.json();
-            if (!data) return;
+        decibelChart.data.labels = labels;
+        decibelChart.data.datasets[0].data = values;
 
-            const now = new Date();
-            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            const labels = [];
-            const values = [];
-            let countOver50 = 0;
-
-            Object.entries(data).sort().forEach(([timestamp, value]) => {
-                const time = new Date(timestamp);
-                if (isNaN(time.getTime()) || time < sevenDaysAgo) return;
-
-                const formatted = timestamp.slice(11, 19); // doar ora:minut:secundă
-                labels.push(formatted);
-                values.push(value);
-                if (value > 50) countOver50++;
-            });
-
-            // Actualizare date în grafic
-            decibelChart.data.labels = labels;
-            decibelChart.data.datasets[0].data = values;
-
-            // Colorare în funcție de nivel zgomot
-            const dataset = decibelChart.data.datasets[0];
-            if (countOver50 >= 6) {
-                dataset.borderColor = 'red';
-                dataset.backgroundColor = 'rgba(255, 0, 0, 0.2)';
-            } else if (countOver50 >= 3) {
-                dataset.borderColor = 'orange';
-                dataset.backgroundColor = 'rgba(255, 165, 0, 0.2)';
-            } else {
-                dataset.borderColor = 'green';
-                dataset.backgroundColor = 'rgba(0, 255, 0, 0.1)';
-            }
-
-            decibelChart.update();
+        // Colorare grafic
+        let countOver50 = values.filter(v => v > 50).length;
+        const dataset = decibelChart.data.datasets[0];
+        if (countOver50 >= 6) {
+            dataset.borderColor = 'red';
+            dataset.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+        } else if (countOver50 >= 3) {
+            dataset.borderColor = 'orange';
+            dataset.backgroundColor = 'rgba(255, 165, 0, 0.2)';
+        } else {
+            dataset.borderColor = 'green';
+            dataset.backgroundColor = 'rgba(0, 255, 0, 0.1)';
         }
 
-        // Încărcare inițială + la fiecare 5 secunde
-        window.onload = () => {
-            loadChartData();
-            setInterval(loadChartData, 5000);
-        };
+        decibelChart.update();
+
+        // Detectare 3 valori consecutive peste/sub 58 dB
+        const ultimele3 = values.slice(-3);
+        if (ultimele3.length === 3) {
+            const toatePeste58 = ultimele3.every(v => v > 58);
+            const toateSub58 = ultimele3.every(v => v < 58);
+
+            if (toatePeste58 && !alertaActiva) {
+                updateStatusBox("avertizare");
+                alertaActiva = true;
+            } else if (toateSub58 && alertaActiva) {
+                updateStatusBox("ok");
+                alertaActiva = false;
+            }
+        }
+    }
+
+    window.onload = () => {
+        loadChartData();
+        setInterval(loadChartData, 5000);
+    };
     </script>
 </body>
 </html>

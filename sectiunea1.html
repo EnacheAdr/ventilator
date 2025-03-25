@@ -7,7 +7,6 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             background: url('ventilator.jpg') no-repeat center center fixed;
             background-size: cover;
             margin: 0;
@@ -15,13 +14,13 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
         }
         .header {
             width: 100%;
             display: flex;
             justify-content: space-between;
-            padding: 10px 20px;
+            padding: 15px 30px;
         }
         .header .button {
             padding: 10px 15px;
@@ -30,16 +29,13 @@
         .container {
             width: 90%;
             max-width: 600px;
-            padding: 20px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+            padding: 20px;
             text-align: center;
             margin-top: 10px;
             flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
         h1 {
             font-size: 24px;
@@ -60,7 +56,6 @@
             padding: 10px 15px;
             font-size: 16px;
             font-weight: bold;
-            text-align: center;
             border-radius: 10px;
             text-decoration: none;
             color: white;
@@ -79,67 +74,119 @@
             margin: 20px 0;
         }
     </style>
-    <!-- Include Chart.js -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
+    <!-- Butoane sus -->
     <div class="header">
-        <button class="button green" onclick="sendCommand('pornire')">▶️ Pornește Ventilatoarele</button>
-        <button class="button red" onclick="sendCommand('oprire')">⛔ Oprește Ventilatoarele</button>
+        <button class="button green" onclick="sendCommand('pornire')">▶️ Pornește</button>
+        <button class="button red" onclick="sendCommand('oprire')">⛔ Oprește</button>
     </div>
+
+    <!-- Conținut -->
     <div class="container">
         <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
         <div id="status" class="status">✅ Ventilatoarele funcționează normal!</div>
+
+        <!-- Grafic -->
         <div id="chartContainer">
             <canvas id="decibelChart"></canvas>
         </div>
+
+        <!-- Buton Înapoi -->
         <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
     </div>
 
     <script>
-        // Configurare Firebase
         const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
-        const firebaseAuthToken = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn"; // Înlocuiește cu token-ul tău
+        const firebaseAuthToken = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn"; // <- Înlocuiește cu tokenul tău real
 
-        // Funcție pentru trimiterea comenzilor
+        // Trimitere comandă (pornire/oprire)
         function sendCommand(comanda) {
             fetch(`${firebaseURL}/comanda.json?auth=${firebaseAuthToken}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(comanda)
             })
-            .then(response => {
-                if (response.ok) {
-                    alert(`Comanda '${comanda}' a fost trimisă cu succes!`);
-                } else {
-                    alert("Eroare la trimiterea comenzii.");
-                }
-            })
-            .catch(error => {
-                alert(`Eroare de rețea: ${error}`);
-            });
+            .then(res => res.ok ? alert(`Comanda '${comanda}' a fost trimisă.`) : alert("Eroare la trimitere."))
+            .catch(err => alert("Eroare rețea: " + err));
         }
 
-        // Inițializare grafic
+        // Grafic
         const ctx = document.getElementById('decibelChart').getContext('2d');
         const decibelChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: [], // Timestamps
+                labels: [],
                 datasets: [{
                     label: 'Nivel dB',
                     data: [],
                     borderColor: 'green',
                     backgroundColor: 'rgba(0, 255, 0, 0.1)',
                     borderWidth: 2,
-                    pointRadius: 0,
-                    fill: true,
-                    segment: {
-                        borderColor: ctx => getSegmentColor(ctx.p0.parsed.y, ctx.p1.parsed.y),
-                        backgroundColor: ctx => getSegmentColor(ctx.p0.parsed.y, ctx.p1.parsed.y, 0.1)
-                    }
+                    pointRadius: 3,
+                    tension: 0.3,
+                    fill: true
                 }]
             },
             options: {
+                responsive: true,
+                scales: {
+                    x: { title: { display: true, text: 'Timp (UTC)' }},
+                    y: { title: { display: true, text: 'dB' }, suggestedMin: 30, suggestedMax: 80 }
+                }
+            }
+        });
+
+        // Încarcă date în grafic
+        async function loadChartData() {
+            const res = await fetch(`${firebaseURL}/citiri.json?auth=${firebaseAuthToken}`);
+            const data = await res.json();
+            if (!data) return;
+
+            const now = new Date();
+            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const labels = [];
+            const values = [];
+            let countOver50 = 0;
+
+            Object.entries(data).sort().forEach(([timestamp, value]) => {
+                const time = new Date(timestamp);
+                if (isNaN(time.getTime()) || time < sevenDaysAgo) return;
+
+                const formatted = timestamp.slice(11, 19); // doar ora:minut:secundă
+                labels.push(formatted);
+                values.push(value);
+                if (value > 50) countOver50++;
+            });
+
+            // Actualizare date în grafic
+            decibelChart.data.labels = labels;
+            decibelChart.data.datasets[0].data = values;
+
+            // Colorare în funcție de nivel zgomot
+            const dataset = decibelChart.data.datasets[0];
+            if (countOver50 >= 6) {
+                dataset.borderColor = 'red';
+                dataset.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+            } else if (countOver50 >= 3) {
+                dataset.borderColor = 'orange';
+                dataset.backgroundColor = 'rgba(255, 165, 0, 0.2)';
+            } else {
+                dataset.borderColor = 'green';
+                dataset.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+            }
+
+            decibelChart.update();
+        }
+
+        // Încărcare inițială + la fiecare 5 secunde
+        window.onload = () => {
+            loadChartData();
+            setInterval(loadChartData, 5000);
+        };
+    </script>
+</body>
+</html>

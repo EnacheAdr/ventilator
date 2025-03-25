@@ -13,22 +13,38 @@
             margin: 0;
             padding: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             height: 100vh;
         }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+        }
+        .header .button {
+            padding: 10px 15px;
+            font-size: 14px;
+        }
         .container {
             width: 90%;
-            max-width: 500px;
-            padding: 30px;
+            max-width: 600px;
+            padding: 20px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
             text-align: center;
+            margin-top: 10px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         h1 {
             font-size: 24px;
             color: #333;
+            margin: 20px 0;
         }
         .status {
             font-size: 20px;
@@ -41,8 +57,8 @@
         }
         .button {
             display: inline-block;
-            padding: 15px 20px;
-            font-size: 18px;
+            padding: 10px 15px;
+            font-size: 16px;
             font-weight: bold;
             text-align: center;
             border-radius: 10px;
@@ -57,25 +73,37 @@
         .red { background: #dc3545; }
         .gray { background: #808080; }
         .button:hover { opacity: 0.9; transform: scale(1.05); }
+        #chartContainer {
+            width: 100%;
+            height: 300px;
+            margin: 20px 0;
+        }
     </style>
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <div class="header">
+        <button class="button green" onclick="sendCommand('pornire')">▶️ Pornește Ventilatoarele</button>
+        <button class="button red" onclick="sendCommand('oprire')">⛔ Oprește Ventilatoarele</button>
+    </div>
     <div class="container">
         <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
         <div id="status" class="status">✅ Ventilatoarele funcționează normal!</div>
-
-        <!-- Butoane control -->
-        <button class="button red" onclick="sendCommand('oprire')">⛔ Oprește Ventilatoarele</button>
-        <button class="button green" onclick="sendCommand('pornire')">▶️ Pornește Ventilatoarele</button>
-
+        <div id="chartContainer">
+            <canvas id="decibelChart"></canvas>
+        </div>
         <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
     </div>
 
     <script>
-        function sendCommand(comanda) {
-            const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot/comanda.json?auth=DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
+        // Configurare Firebase
+        const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
+        const firebaseAuthToken = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn"; // Înlocuiește cu token-ul tău
 
-            fetch(firebaseURL, {
+        // Funcție pentru trimiterea comenzilor
+        function sendCommand(comanda) {
+            fetch(`${firebaseURL}/comanda.json?auth=${firebaseAuthToken}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
@@ -84,15 +112,34 @@
             })
             .then(response => {
                 if (response.ok) {
-                    alert("Comanda '" + comanda + "' a fost trimisă cu succes!");
+                    alert(`Comanda '${comanda}' a fost trimisă cu succes!`);
                 } else {
                     alert("Eroare la trimiterea comenzii.");
                 }
             })
             .catch(error => {
-                alert("Eroare de rețea: " + error);
+                alert(`Eroare de rețea: ${error}`);
             });
         }
-    </script>
-</body>
-</html>
+
+        // Inițializare grafic
+        const ctx = document.getElementById('decibelChart').getContext('2d');
+        const decibelChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Timestamps
+                datasets: [{
+                    label: 'Nivel dB',
+                    data: [],
+                    borderColor: 'green',
+                    backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    segment: {
+                        borderColor: ctx => getSegmentColor(ctx.p0.parsed.y, ctx.p1.parsed.y),
+                        backgroundColor: ctx => getSegmentColor(ctx.p0.parsed.y, ctx.p1.parsed.y, 0.1)
+                    }
+                }]
+            },
+            options: {

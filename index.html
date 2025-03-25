@@ -55,6 +55,40 @@
 <body>
     <div class="container">
         <h1>Monitorizare Ventilatoare</h1>
+ <script>
+    const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
+    const firebaseAuthToken = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn"; // <- Înlocuiește cu tokenul tău Firebase
+
+    async function actualizeazaButon() {
+      try {
+        const res = await fetch(${firebaseURL}.json?auth=${firebaseAuthToken});
+        const data = await res.json();
+
+        const comanda = data?.comanda || "";
+        const status = data?.status || "ok";
+        const buton = document.getElementById("sectiune1");
+
+        if (comanda === "oprire") {
+          buton.className = "button gray";
+          buton.textContent = "Secțiunea 1 – inactivă";
+        } else if (status === "avertizare") {
+          buton.className = "button red";
+          buton.textContent = "Secțiunea 1 ⚠️";
+        } else {
+          buton.className = "button green";
+          buton.textContent = "Secțiunea 1";
+        }
+      } catch (e) {
+        console.error("Eroare la citire din Firebase:", e);
+      }
+    }
+
+    window.onload = () => {
+      actualizeazaButon();
+      setInterval(actualizeazaButon, 5000);
+    };
+  </script>
+
         <a href="sectiunea1.html" class="button green">📊 Secțiunea 1</a>
         <a href="sectiunea2.html" class="button gray">📊 Secțiunea 2 (inactiv)</a>
         <a href="sectiunea3.html" class="button gray">📊 Secțiunea 3 (inactiv)</a>

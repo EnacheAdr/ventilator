@@ -87,13 +87,13 @@
         statusBox.textContent = "✅ Ventilatoarele funcționează normal!";
       } else if (status === "alerta1") {
         statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 3 ore.";
+        statusBox.textContent = "⚠️ Fluctuații. Estimare: defect în 3 ore.";
       } else if (status === "alerta2") {
         statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Verificare urgentă! Estimare: defect în 2 ore.";
+        statusBox.textContent = "⚠️ Uzură accentuată. Estimare: defect în 2 ore.";
       } else if (status === "oprit_automat") {
         statusBox.className = "status red";
-        statusBox.textContent = "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea deteriorării. Verificare necesară! În cazul pornirii manuale, ventilatorul se estimează că se va defecta într-o oră.";
+        statusBox.textContent = "❌ Ventilatoare oprite automat. Estimare: defect în 1 oră.";
       }
     }
 
@@ -113,18 +113,30 @@
         datasets: [{
           label: "Nivel dB",
           data: [],
-          borderColor: "green",
-          backgroundColor: "rgba(0, 255, 0, 0.1)",
-          pointRadius: 2,
-          tension: 0.3,
-          fill: true
+          pointBackgroundColor: [],
+          borderColor: "#ccc",
+          pointRadius: 5,
+          tension: 0.3
         }]
       },
       options: {
         responsive: true,
+        plugins: {
+          legend: {
+            labels: {
+              font: { size: 14 }
+            }
+          }
+        },
         scales: {
-          x: { title: { display: true, text: "Timp (UTC)" } },
-          y: { title: { display: true, text: "dB" }, suggestedMin: 30, suggestedMax: 80 }
+          x: {
+            title: { display: true, text: "Timp (UTC)" }
+          },
+          y: {
+            title: { display: true, text: "dB" },
+            suggestedMin: 30,
+            suggestedMax: 80
+          }
         }
       }
     });
@@ -136,39 +148,33 @@
       const status = data.status || "normal";
       updateStatusText(status);
 
-      const labels = [];
-      const values = [];
+      const entries = Object.entries(citiri).sort();
+      const labels = entries.map(([t, _]) => t.slice(11, 19));
+      const values = entries.map(([_, v]) => v);
 
-      Object.entries(citiri).sort().forEach(([t, v]) => {
-        labels.push(t.slice(11, 19));
-        values.push(v);
-      });
+      // Calculăm culoarea fiecărui punct
+      const colors = new Array(values.length).fill("green");
 
-      // Căutăm cel mai lung șir consecutiv de valori > 50 dB
-      let maxConsec = 0;
-      let currentConsec = 0;
-      for (let i = 0; i < values.length; i++) {
+      let i = 0;
+      while (i < values.length) {
         if (values[i] > 50) {
-          currentConsec++;
-          if (currentConsec > maxConsec) maxConsec = currentConsec;
+          let start = i;
+          while (i < values.length && values[i] > 50) {
+            i++;
+          }
+          let count = i - start;
+          let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
+          for (let j = start; j < i; j++) {
+            colors[j] = color;
+          }
         } else {
-          currentConsec = 0;
+          i++;
         }
-      }
-
-      if (maxConsec >= 6) {
-        chart.data.datasets[0].borderColor = "red";
-        chart.data.datasets[0].backgroundColor = "rgba(255, 0, 0, 0.2)";
-      } else if (maxConsec >= 2) {
-        chart.data.datasets[0].borderColor = "orange";
-        chart.data.datasets[0].backgroundColor = "rgba(255, 165, 0, 0.2)";
-      } else {
-        chart.data.datasets[0].borderColor = "green";
-        chart.data.datasets[0].backgroundColor = "rgba(0, 255, 0, 0.1)";
       }
 
       chart.data.labels = labels;
       chart.data.datasets[0].data = values;
+      chart.data.datasets[0].pointBackgroundColor = colors;
       chart.update();
     }
 

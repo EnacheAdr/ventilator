@@ -1,100 +1,71 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Monitorizare Ventilatoare</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: url('background.png') no-repeat center center fixed;
-            background-size: cover;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            width: 90%;
-            max-width: 500px;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
-        h1 {
-            margin-bottom: 20px;
-            font-size: 24px;
-            color: #333;
-        }
-        .button {
-            display: block;
-            width: 90%;
-            padding: 15px;
-            margin: 10px auto;
-            font-size: 18px;
-            font-weight: bold;
-            text-align: center;
-            border-radius: 10px;
-            text-decoration: none;
-            border: none;
-            color: white;
-            transition: 0.3s;
-            box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
-        }
-        .green { background: #28a745; }
-        .gray { background: #808080; }
-        .red { background: #dc3545; }
-        .button:hover { opacity: 0.9; transform: scale(1.05); }
-    </style>
+  <meta charset="UTF-8">
+  <title>Meniu Ventilatoare</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding-top: 100px;
+    }
+    .button {
+      padding: 15px 25px;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 10px;
+      text-decoration: none;
+      color: white;
+      transition: 0.3s;
+      box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
+      display: inline-block;
+      margin: 20px;
+    }
+    .green { background: #28a745; }
+    .yellow { background: #ffc107; color: black; }
+    .red { background: #dc3545; }
+    .gray { background: #6c757d; }
+    .button:hover { transform: scale(1.05); }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Monitorizare Ventilatoare</h1>
- 
+  <h1>Meniu Monitorizare Ventilatoare</h1>
 
-        <a href="sectiunea1.html" class="button green">📊 Secțiunea 1</a>
-<script>
+  <!-- Buton dinamic pentru sectiunea 1 -->
+  <a id="sectiune1" href="sectiunea1.html" class="button green">Secțiunea 1</a>
+
+  <script>
     const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
-    const firebaseAuthToken = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn"; // <- Înlocuiește cu tokenul tău Firebase
+    const auth = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
 
-    async function actualizeazaButon() {
+    async function updateButtonStatus() {
       try {
-        const res = await fetch(${firebaseURL}.json?auth=${firebaseAuthToken});
+        const res = await fetch(`${firebaseURL}.json?auth=${auth}`);
         const data = await res.json();
-
-        const comanda = data?.comanda || "";
-        const status = data?.status || "ok";
+        const status = data.status || "normal";
+        const comanda = data.comanda || "";
         const buton = document.getElementById("sectiune1");
 
-        if (comanda === "oprire") {
+        if (comanda === "oprire" || status === "oprit_automat") {
           buton.className = "button gray";
-          buton.textContent = "Secțiunea 1 – inactivă";
-        } else if (status === "avertizare") {
-          buton.className = "button red";
+          buton.textContent = "Secțiunea 1 - inactivă";
+        } else if (status === "alerta1" || status === "alerta2") {
+          buton.className = "button yellow";
           buton.textContent = "Secțiunea 1 ⚠️";
-        } else {
+        } else if (status === "normal") {
           buton.className = "button green";
           buton.textContent = "Secțiunea 1";
         }
-      } catch (e) {
-        console.error("Eroare la citire din Firebase:", e);
+      } catch (err) {
+        console.error("Eroare Firebase:", err);
       }
     }
 
     window.onload = () => {
-      actualizeazaButon();
-      setInterval(actualizeazaButon, 5000);
+      updateButtonStatus();
+      setInterval(updateButtonStatus, 5000);
     };
   </script>
-        <a href="sectiunea2.html" class="button gray">📊 Secțiunea 2 (inactiv)</a>
-        <a href="sectiunea3.html" class="button gray">📊 Secțiunea 3 (inactiv)</a>
-        <a href="sectiunea4.html" class="button gray">📊 Secțiunea 4 (inactiv)</a>
-        <a href="sectiunea5.html" class="button gray">📊 Secțiunea 5 (inactiv)</a>
-    </div>
 </body>
 </html>

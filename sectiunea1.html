@@ -58,34 +58,9 @@
     .button.green { background: #28a745; }
     .button.red { background: #dc3545; }
     .button.gray { background: #808080; }
-    #chartContainer {
-      width: 100%;
-      height: auto;
-      margin: 10px 0;
-    }
     canvas {
-      max-height: 280px;
+      max-height: 260px;
     }
-    .custom-legend {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 10px;
-    }
-    .legend-box {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-    .legend-color {
-      width: 15px;
-      height: 15px;
-      border-radius: 3px;
-      display: inline-block;
-    }
-    .green-box { background-color: green; }
-    .orange-box { background-color: orange; }
-    .red-box { background-color: red; }
   </style>
 </head>
 <body>
@@ -93,18 +68,19 @@
     <button class="button green" onclick="sendCommand('pornire')">▶️ Pornire manuală</button>
     <button class="button red" onclick="sendCommand('oprire')">⛔ Oprire manuală</button>
   </div>
+
   <div class="container">
     <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
     <div id="statusBox" class="status green">✅ Ventilatoarele funcționează normal!</div>
 
-    <!-- Legenda customizată -->
-    <div class="custom-legend">
-      <div class="legend-box"><span class="legend-color green-box"></span> Verde</div>
-      <div class="legend-box"><span class="legend-color orange-box"></span> Galben</div>
-      <div class="legend-box"><span class="legend-color red-box"></span> Roșu</div>
+    <div style="margin: 0 auto 10px auto; display: inline-block;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <div style="width: 25px; height: 15px; background: linear-gradient(to right, green, orange, red); border-radius: 4px;"></div>
+        <span style="font-weight: bold;">Nivel dB</span>
+      </div>
     </div>
 
-    <div id="chartContainer">
+    <div style="margin-top: 10px;">
       <canvas id="decibelChart"></canvas>
     </div>
 
@@ -150,19 +126,42 @@
         data: [],
         pointBackgroundColor: [],
         borderColor: "#ccc",
-        pointRadius: 5,
+        pointRadius: 4,
         tension: 0.3
       }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      layout: {
+        padding: 10
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
       scales: {
         x: {
-          title: { display: true, text: "Data" }
+          ticks: {
+            autoSkip: false,
+            maxRotation: 0,
+            callback: function(value, index, ticks) {
+              if (index === 0) return this.getLabelForValue(value);
+              const prev = this.getLabelForValue(ticks[index - 1].value);
+              const curr = this.getLabelForValue(value);
+              return prev === curr ? '' : curr;
+            }
+          },
+          title: {
+            display: true,
+            text: "Data"
+          }
         },
         y: {
-          title: { display: true, text: "dB" },
+          title: {
+            display: true,
+            text: "dB"
+          },
           suggestedMin: 30,
           suggestedMax: 80
         }
@@ -178,7 +177,7 @@
     updateStatusText(status);
 
     const entries = Object.entries(citiri)
-      .filter(([t, _]) => {
+      .filter(([t]) => {
         const date = new Date(t);
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -186,12 +185,12 @@
       })
       .sort();
 
-    const labels = entries.map(([t, _]) => {
+    const labels = entries.map(([t]) => {
       const d = new Date(t);
       return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
 
-    const values = entries.map(([_, v]) => v);
+    const values = entries.map(([, v]) => v);
     const colors = new Array(values.length).fill("green");
 
     let i = 0;

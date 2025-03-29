@@ -1,29 +1,25 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Monitorizare Ventilatoare - Secțiunea 1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
       background: url('ventilator.jpg') no-repeat center center fixed;
       background-size: cover;
       margin: 0;
       padding: 0;
+      text-align: center;
       color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
     }
 
     .header {
-      width: 100%;
       display: flex;
       justify-content: space-between;
-      padding: 15px 30px;
+      padding: 20px;
     }
 
     .button {
@@ -33,159 +29,127 @@
       border-radius: 10px;
       text-decoration: none;
       color: white;
-      margin: 10px;
       cursor: pointer;
+      border: none;
     }
 
     .green { background: #28a745; }
     .red { background: #dc3545; }
     .gray { background: #808080; }
 
-    .grafic-zi {
-      width: 90%;
-      max-width: 650px;
+    .container {
       background: rgba(255,255,255,0.95);
       border-radius: 20px;
+      width: 90%;
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 30px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      margin: 20px 0;
-      padding: 20px;
     }
 
-    h2.data {
-      margin: 0 0 10px 0;
+    .status {
+      font-size: 20px;
+      font-weight: bold;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      color: white;
     }
 
-    .chart-scroll {
-      overflow-x: auto;
-      width: 100%;
-    }
+    .status.green { background: #28a745; }
+    .status.yellow { background: #ffc107; color: black; }
+    .status.red { background: #dc3545; }
 
-    .chart-inner {
-      width: 1200px;
-    }
-
-    .legend-box {
-      width: 60px;
-      height: 15px;
-      border-radius: 3px;
-      overflow: hidden;
-      border: 1px solid #ccc;
-      display: flex;
-      margin-right: 8px;
-    }
-
-    .legend-box div {
-      flex: 1;
-      height: 100%;
-    }
-
-    .green-part { background-color: #28a745; }
-    .yellow-part { background-color: #ffc107; }
-    .red-part { background-color: #dc3545; }
-
-    .legend-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
+    select {
+      font-size: 16px;
+      padding: 8px;
+      margin-bottom: 20px;
+      border-radius: 8px;
     }
 
     canvas {
-      max-height: 260px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-
   <div class="header">
     <button class="button green" onclick="sendCommand('pornire')">▶️ Pornire manuală</button>
     <button class="button red" onclick="sendCommand('oprire')">⛔ Oprire manuală</button>
   </div>
 
-  <div id="graficeContainer"></div>
+  <div class="container">
+    <h2>Monitorizare Ventilatoare - Secțiunea 1</h2>
+    <div id="statusBox" class="status green">✅ Ventilatoarele funcționează normal!</div>
 
-  <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
-<script>
-  const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
-  const auth = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
+    <select id="ziSelector" onchange="deseneazaGraficul()"></select>
+    <canvas id="grafic" width="600" height="300"></canvas>
 
-  function sendCommand(cmd) {
-    fetch(`${firebaseURL}/comanda.json?auth=${auth}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cmd)
-    });
-  }
+    <br>
+    <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
+  </div>
 
-  function formatDateKey(dateStr) {
-    const d = new Date(dateStr);
-    return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-  }
+  <script>
+    const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
+    const auth = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
 
-  async function loadGrafice() {
-    const res = await fetch(`${firebaseURL}.json?auth=${auth}`);
-    const data = await res.json();
-    const citiri = data.citiri || {};
-    const container = document.getElementById("graficeContainer");
-    container.innerHTML = "";
+    let toateCitirile = {};
+    let chart;
 
-    // Grupăm pe zile
-    const grupate = {};
-    Object.entries(citiri).forEach(([timp, valoare]) => {
-      const key = formatDateKey(timp);
-      if (!grupate[key]) grupate[key] = [];
-      grupate[key].push({ timp, valoare });
-    });
+    function sendCommand(cmd) {
+      fetch(`${firebaseURL}/comanda.json?auth=${auth}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cmd)
+      });
+    }
 
-    const zileSortate = Object.keys(grupate).sort((a,b)=>new Date(a)-new Date(b)).slice(-7); // doar ultimele 7 zile
+    function formatDateKey(dateStr) {
+      const d = new Date(dateStr);
+      return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+    }
 
-    zileSortate.forEach(zi => {
-      const div = document.createElement("div");
-      div.className = "grafic-zi";
+    async function incarcaDate() {
+      const res = await fetch(`${firebaseURL}/citiri.json?auth=${auth}`);
+      const data = await res.json();
+      toateCitirile = {};
 
-      const h2 = document.createElement("h2");
-      h2.className = "data";
-      const parts = zi.split("-");
-      h2.innerText = `${parts[2]}.${parts[1]}.${parts[0]}`;
-      div.appendChild(h2);
+      for (const [timestamp, valoare] of Object.entries(data || {})) {
+        const zi = formatDateKey(timestamp);
+        if (!toateCitirile[zi]) toateCitirile[zi] = [];
+        toateCitirile[zi].push({ timp: timestamp, valoare });
+      }
 
-      const legenda = document.createElement("div");
-      legenda.className = "legend-row";
-      legenda.innerHTML = `
-        <div class="legend-box">
-          <div class="green-part"></div>
-          <div class="yellow-part"></div>
-          <div class="red-part"></div>
-        </div>
-        <span style="font-weight: bold;">Nivel dB</span>
-      `;
-      div.appendChild(legenda);
+      populateDropdown();
+      deseneazaGraficul();
+    }
 
-      const chartWrap = document.createElement("div");
-      chartWrap.className = "chart-scroll";
+    function populateDropdown() {
+      const selector = document.getElementById("ziSelector");
+      selector.innerHTML = "";
 
-      const chartInner = document.createElement("div");
-      chartInner.className = "chart-inner";
+      const zile = Object.keys(toateCitirile).sort().slice(-7); // ultimele 7 zile
+      zile.forEach(zi => {
+        const opt = document.createElement("option");
+        const [y,m,d] = zi.split("-");
+        opt.value = zi;
+        opt.text = `${d}.${m}.${y}`;
+        selector.appendChild(opt);
+      });
+    }
 
-      const canvas = document.createElement("canvas");
-      const canvasId = `chart_${zi.replace(/-/g, "_")}`;
-      canvas.id = canvasId;
+    function deseneazaGraficul() {
+      const zi = document.getElementById("ziSelector").value;
+      const date = toateCitirile[zi] || [];
 
-      chartInner.appendChild(canvas);
-      chartWrap.appendChild(chartInner);
-      div.appendChild(chartWrap);
-      container.appendChild(div);
-
-      // Pregătim datele pentru grafic
-      const puncte = grupate[zi].sort((a,b)=>new Date(a.timp)-new Date(b.timp));
-      const labels = puncte.map(p => {
+      const labels = date.map(p => {
         const d = new Date(p.timp);
         return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
       });
 
-      const valori = puncte.map(p => p.valoare);
+      const valori = date.map(p => p.valoare);
       const colors = new Array(valori.length).fill("#28a745");
 
-      // Colorează în funcție de secvențe
       let i = 0;
       while (i < valori.length) {
         if (valori[i] > 50) {
@@ -199,53 +163,65 @@
         }
       }
 
-      // Inițializează graficul
-      new Chart(canvas.getContext("2d"), {
-        type: "line",
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("grafic").getContext("2d");
+
+      chart = new Chart(ctx, {
+        type: 'line',
         data: {
           labels: labels,
           datasets: [{
             label: "Nivel dB",
             data: valori,
-            pointBackgroundColor: colors,
             borderColor: "#888",
+            pointBackgroundColor: colors,
             pointRadius: 4,
             tension: 0.3
           }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          layout: {
-            padding: 10
-          },
-          interaction: {
-            mode: 'x',
-            intersect: false
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            x: {
-              ticks: { maxRotation: 0, font: { size: 12 } },
-              title: { display: true, text: "Oră" }
-            },
-            y: {
-              suggestedMin: 30,
-              suggestedMax: 80,
-              title: { display: true, text: "dB" }
-            }
+            x: { title: { display: true, text: "Oră" } },
+            y: { suggestedMin: 30, suggestedMax: 80, title: { display: true, text: "dB" } }
           }
         }
       });
-    });
-  }
 
-  window.onload = () => {
-    loadGrafice();
-    setInterval(loadGrafice, 10000); // update la fiecare 10 secunde
-  };
-</script>
+      actualizeazaStatus(valori);
+    }
+
+    function actualizeazaStatus(valori) {
+      const box = document.getElementById("statusBox");
+      let maxConsec = 0, count = 0;
+      for (let val of valori) {
+        if (val > 50) {
+          count++;
+          maxConsec = Math.max(maxConsec, count);
+        } else {
+          count = 0;
+        }
+      }
+
+      if (maxConsec >= 6) {
+        box.className = "status red";
+        box.innerHTML = "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea deteriorării. Verificare necesară!";
+      } else if (maxConsec >= 4) {
+        box.className = "status yellow";
+        box.innerHTML = "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Verificare urgentă recomandată!";
+      } else if (maxConsec >= 2) {
+        box.className = "status yellow";
+        box.innerHTML = "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizare recomandată.";
+      } else {
+        box.className = "status green";
+        box.innerHTML = "✅ Ventilatoarele funcționează normal!";
+      }
+    }
+
+    window.onload = () => {
+      incarcaDate();
+      setInterval(incarcaDate, 10000);
+    };
+  </script>
 </body>
 </html>

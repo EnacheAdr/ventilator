@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       text-align: center;
       background: url('ventilator.jpg') no-repeat center center fixed;
       background-size: cover;
@@ -18,22 +18,24 @@
       align-items: center;
       min-height: 100vh;
     }
+
     .header {
       width: 100%;
       display: flex;
       justify-content: space-between;
       padding: 15px 30px;
     }
+
     .container {
       width: 90%;
-      max-width: 600px;
-      background: rgba(255, 255, 255, 0.95);
+      max-width: 650px;
+      background: rgba(255, 255, 255, 0.96);
       border-radius: 20px;
-      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
-      padding: 20px;
-      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.25);
+      padding: 25px;
       margin-top: 10px;
     }
+
     .status {
       font-size: 18px;
       font-weight: bold;
@@ -42,9 +44,11 @@
       margin: 20px 0;
       color: white;
     }
+
     .green { background: #28a745; }
     .yellow { background: #ffc107; color: black; }
     .red { background: #dc3545; }
+
     .button {
       padding: 10px 15px;
       font-size: 16px;
@@ -55,12 +59,38 @@
       margin: 10px;
       cursor: pointer;
     }
+
     .button.green { background: #28a745; }
     .button.red { background: #dc3545; }
     .button.gray { background: #808080; }
+
     canvas {
       max-height: 260px;
     }
+
+    .custom-legend {
+      display: flex;
+      justify-content: center;
+      margin: 10px auto;
+    }
+
+    .legend-box {
+      width: 90px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      overflow: hidden;
+      border: 1px solid #ccc;
+    }
+
+    .legend-part {
+      flex: 1;
+      height: 100%;
+    }
+
+    .green-part { background-color: #28a745; }
+    .yellow-part { background-color: #ffc107; }
+    .red-part { background-color: #dc3545; }
   </style>
 </head>
 <body>
@@ -73,16 +103,16 @@
     <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
     <div id="statusBox" class="status green">✅ Ventilatoarele funcționează normal!</div>
 
-    <div style="margin: 0 auto 10px auto; display: inline-block;">
-      <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <div style="width: 25px; height: 15px; background: linear-gradient(to right, green, orange, red); border-radius: 4px;"></div>
-        <span style="font-weight: bold;">Nivel dB</span>
+    <!-- Legendă tricoloră -->
+    <div class="custom-legend">
+      <div class="legend-box">
+        <div class="legend-part green-part"></div>
+        <div class="legend-part yellow-part"></div>
+        <div class="legend-part red-part"></div>
       </div>
     </div>
 
-    <div style="margin-top: 10px;">
-      <canvas id="decibelChart"></canvas>
-    </div>
+    <canvas id="decibelChart"></canvas>
 
     <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
   </div>
@@ -125,45 +155,37 @@
         label: "Nivel dB",
         data: [],
         pointBackgroundColor: [],
-        borderColor: "#ccc",
+        borderColor: "#999",
         pointRadius: 4,
-        tension: 0.3
+        tension: 0.4
       }]
     },
     options: {
       responsive: true,
       layout: {
-        padding: 10
+        padding: { top: 10, bottom: 20, left: 15, right: 15 }
       },
       plugins: {
-        legend: {
-          display: false
-        }
+        legend: { display: false }
       },
       scales: {
         x: {
           ticks: {
-            autoSkip: false,
-            maxRotation: 0,
-            callback: function(value, index, ticks) {
-              if (index === 0) return this.getLabelForValue(value);
+            font: { size: 14 },
+            callback: function(val, index, ticks) {
+              if (index === 0) return this.getLabelForValue(val);
               const prev = this.getLabelForValue(ticks[index - 1].value);
-              const curr = this.getLabelForValue(value);
+              const curr = this.getLabelForValue(val);
               return prev === curr ? '' : curr;
             }
           },
-          title: {
-            display: true,
-            text: "Data"
-          }
+          title: { display: true, text: "Data" }
         },
         y: {
-          title: {
-            display: true,
-            text: "dB"
-          },
+          title: { display: true, text: "dB" },
           suggestedMin: 30,
-          suggestedMax: 80
+          suggestedMax: 80,
+          ticks: { stepSize: 10, font: { size: 13 } }
         }
       }
     }
@@ -178,30 +200,34 @@
 
     const entries = Object.entries(citiri)
       .filter(([t]) => {
-        const date = new Date(t);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        return date >= sevenDaysAgo;
+        const d = new Date(t);
+        const now = new Date();
+        return d >= new Date(now.setDate(now.getDate() - 7));
       })
       .sort();
 
-    const labels = entries.map(([t]) => {
-      const d = new Date(t);
-      return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const labels = [];
+    const values = [];
+    const colors = [];
+
+    entries.forEach(([timestamp, value]) => {
+      const d = new Date(timestamp);
+      const label = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+      labels.push(label);
+      values.push(value);
     });
 
-    const values = entries.map(([, v]) => v);
-    const colors = new Array(values.length).fill("green");
-
+    // Colorare bazată pe grupuri consecutive
     let i = 0;
     while (i < values.length) {
       if (values[i] > 50) {
         let start = i;
         while (i < values.length && values[i] > 50) i++;
         let count = i - start;
-        let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
+        let color = count >= 6 ? "#dc3545" : count >= 2 ? "#ffc107" : "#28a745";
         for (let j = start; j < i; j++) colors[j] = color;
       } else {
+        colors[i] = "#28a745";
         i++;
       }
     }

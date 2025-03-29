@@ -45,7 +45,6 @@
     .green { background: #28a745; }
     .yellow { background: #ffc107; color: black; }
     .red { background: #dc3545; }
-    .gray { background: #6c757d; }
     .button {
       padding: 10px 15px;
       font-size: 16px;
@@ -95,9 +94,6 @@
       } else if (status === "oprit_automat") {
         statusBox.className = "status red";
         statusBox.textContent = "❌ Ventilatoare oprite automat pentru prevenire. Verificare necesară! Estimare defect: 1 oră.";
-      } else {
-        statusBox.className = "status gray";
-        statusBox.textContent = "Stare necunoscută";
       }
     }
 
@@ -117,8 +113,8 @@
         datasets: [{
           label: "Nivel dB",
           data: [],
-          borderColor: "red",
-          backgroundColor: "rgba(255,0,0,0.2)",
+          borderColor: "green",
+          backgroundColor: "rgba(0, 255, 0, 0.1)",
           pointRadius: 2,
           tension: 0.3,
           fill: true
@@ -142,10 +138,27 @@
 
       const labels = [];
       const values = [];
+      let consecutive = 0;
+
       Object.entries(citiri).sort().forEach(([t, v]) => {
         labels.push(t.slice(11, 19));
         values.push(v);
       });
+
+      // Determină culoarea în funcție de ultimele citiri
+      const last = values.slice(-6);
+      consecutive = last.filter(v => v > 50).length;
+
+      if (consecutive >= 6) {
+        chart.data.datasets[0].borderColor = "red";
+        chart.data.datasets[0].backgroundColor = "rgba(255, 0, 0, 0.2)";
+      } else if (consecutive >= 2) {
+        chart.data.datasets[0].borderColor = "orange";
+        chart.data.datasets[0].backgroundColor = "rgba(255, 165, 0, 0.2)";
+      } else {
+        chart.data.datasets[0].borderColor = "green";
+        chart.data.datasets[0].backgroundColor = "rgba(0, 255, 0, 0.1)";
+      }
 
       chart.data.labels = labels;
       chart.data.datasets[0].data = values;

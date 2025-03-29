@@ -71,11 +71,6 @@
       font-size: 16px;
       margin-top: 15px;
     }
-
-    canvas {
-      max-width: 100%;
-      overflow-x: auto;
-    }
   </style>
 </head>
 <body>
@@ -91,7 +86,12 @@
     <div class="select-title">Alegeți o dată pentru a verifica istoricul funcționării ventilatoarelor:</div>
     <select id="ziSelector" onchange="deseneazaGraficul()"></select>
 
-    <canvas id="grafic" height="300"></canvas>
+    <!-- Grafic scrollabil orizontal -->
+    <div style="overflow-x: auto; width: 100%;">
+      <div style="width: 1200px;">
+        <canvas id="grafic" height="300"></canvas>
+      </div>
+    </div>
 
     <br><br>
     <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>

@@ -130,10 +130,8 @@
     .scroll-hint {
       font-size: 13px;
       color: #555;
+      margin-top: 8px;
       text-align: left;
-      margin-top: -10px;
-      margin-bottom: 10px;
-      padding-left: 10px;
     }
   </style>
 </head>
@@ -160,10 +158,10 @@
     </div>
 
     <div id="chartWrapper">
-      <div class="scroll-hint">🔄 Derulați spre dreapta pentru a vizualiza întreg graficul.</div>
       <div id="chartContainer">
         <canvas id="decibelChart"></canvas>
       </div>
+      <p class="scroll-hint">👉 Derulați spre dreapta pentru a vizualiza întregul grafic de funcționare pentru ziua selectată.</p>
     </div>
 
     <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
@@ -281,15 +279,13 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false }
+            legend: {
+              display: false
+            }
           },
           scales: {
             x: {
-              title: {
-                display: true,
-                text: "Oră",
-                align: "start" // 👈 Asta îl aduce spre stânga
-              }
+              title: { display: true, text: "Oră" }
             },
             y: {
               title: { display: true, text: "dB" },

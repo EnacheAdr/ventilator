@@ -58,7 +58,34 @@
     .button.green { background: #28a745; }
     .button.red { background: #dc3545; }
     .button.gray { background: #808080; }
-    #chartContainer { width: 100%; height: 300px; margin: 20px 0; }
+    #chartContainer {
+      width: 100%;
+      height: auto;
+      margin: 10px 0;
+    }
+    canvas {
+      max-height: 280px;
+    }
+    .custom-legend {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+    .legend-box {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .legend-color {
+      width: 15px;
+      height: 15px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .green-box { background-color: green; }
+    .orange-box { background-color: orange; }
+    .red-box { background-color: red; }
   </style>
 </head>
 <body>
@@ -69,119 +96,127 @@
   <div class="container">
     <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
     <div id="statusBox" class="status green">✅ Ventilatoarele funcționează normal!</div>
+
+    <!-- Legenda customizată -->
+    <div class="custom-legend">
+      <div class="legend-box"><span class="legend-color green-box"></span> Verde</div>
+      <div class="legend-box"><span class="legend-color orange-box"></span> Galben</div>
+      <div class="legend-box"><span class="legend-color red-box"></span> Roșu</div>
+    </div>
+
     <div id="chartContainer">
       <canvas id="decibelChart"></canvas>
     </div>
+
     <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
   </div>
+<script>
+  const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
+  const auth = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
 
-  <script>
-    const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
-    const auth = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
+  const statusBox = document.getElementById("statusBox");
 
-    const statusBox = document.getElementById("statusBox");
-
-    function updateStatusText(status) {
-      if (status === "normal") {
-        statusBox.className = "status green";
-        statusBox.textContent = "✅ Ventilatoarele funcționează normal!";
-      } else if (status === "alerta1") {
-        statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Fluctuații. Estimare: defect în 3 ore.";
-      } else if (status === "alerta2") {
-        statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Uzură accentuată. Estimare: defect în 2 ore.";
-      } else if (status === "oprit_automat") {
-        statusBox.className = "status red";
-        statusBox.textContent = "❌ Ventilatoare oprite automat. Estimare: defect în 1 oră.";
-      }
+  function updateStatusText(status) {
+    if (status === "normal") {
+      statusBox.className = "status green";
+      statusBox.textContent = "✅ Ventilatoarele funcționează normal!";
+    } else if (status === "alerta1") {
+      statusBox.className = "status yellow";
+      statusBox.textContent = "⚠️ Fluctuații. Estimare: defect în 3 ore.";
+    } else if (status === "alerta2") {
+      statusBox.className = "status yellow";
+      statusBox.textContent = "⚠️ Uzură accentuată. Estimare: defect în 2 ore.";
+    } else if (status === "oprit_automat") {
+      statusBox.className = "status red";
+      statusBox.textContent = "❌ Ventilatoare oprite automat. Estimare: defect în 1 oră.";
     }
+  }
 
-    function sendCommand(cmd) {
-      fetch(`${firebaseURL}/comanda.json?auth=${auth}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cmd)
-      });
-    }
+  function sendCommand(cmd) {
+    fetch(`${firebaseURL}/comanda.json?auth=${auth}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cmd)
+    });
+  }
 
-    const ctx = document.getElementById("decibelChart").getContext("2d");
-    const chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: [],
-        datasets: [{
-          label: "Nivel dB",
-          data: [],
-          pointBackgroundColor: [],
-          borderColor: "#ccc",
-          pointRadius: 5,
-          tension: 0.3
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            labels: {
-              font: { size: 14 }
-            }
-          }
+  const ctx = document.getElementById("decibelChart").getContext("2d");
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [{
+        label: "Nivel dB",
+        data: [],
+        pointBackgroundColor: [],
+        borderColor: "#ccc",
+        pointRadius: 5,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          title: { display: true, text: "Data" }
         },
-        scales: {
-          x: {
-            title: { display: true, text: "Timp (UTC)" }
-          },
-          y: {
-            title: { display: true, text: "dB" },
-            suggestedMin: 30,
-            suggestedMax: 80
-          }
+        y: {
+          title: { display: true, text: "dB" },
+          suggestedMin: 30,
+          suggestedMax: 80
         }
       }
+    }
+  });
+
+  async function loadData() {
+    const res = await fetch(`${firebaseURL}.json?auth=${auth}`);
+    const data = await res.json();
+    const citiri = data.citiri || {};
+    const status = data.status || "normal";
+    updateStatusText(status);
+
+    const entries = Object.entries(citiri)
+      .filter(([t, _]) => {
+        const date = new Date(t);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        return date >= sevenDaysAgo;
+      })
+      .sort();
+
+    const labels = entries.map(([t, _]) => {
+      const d = new Date(t);
+      return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
 
-    async function loadData() {
-      const res = await fetch(`${firebaseURL}.json?auth=${auth}`);
-      const data = await res.json();
-      const citiri = data.citiri || {};
-      const status = data.status || "normal";
-      updateStatusText(status);
+    const values = entries.map(([_, v]) => v);
+    const colors = new Array(values.length).fill("green");
 
-      const entries = Object.entries(citiri).sort();
-      const labels = entries.map(([t, _]) => t.slice(11, 19));
-      const values = entries.map(([_, v]) => v);
-
-      // Calculăm culoarea fiecărui punct
-      const colors = new Array(values.length).fill("green");
-
-      let i = 0;
-      while (i < values.length) {
-        if (values[i] > 50) {
-          let start = i;
-          while (i < values.length && values[i] > 50) {
-            i++;
-          }
-          let count = i - start;
-          let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
-          for (let j = start; j < i; j++) {
-            colors[j] = color;
-          }
-        } else {
-          i++;
-        }
+    let i = 0;
+    while (i < values.length) {
+      if (values[i] > 50) {
+        let start = i;
+        while (i < values.length && values[i] > 50) i++;
+        let count = i - start;
+        let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
+        for (let j = start; j < i; j++) colors[j] = color;
+      } else {
+        i++;
       }
-
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = values;
-      chart.data.datasets[0].pointBackgroundColor = colors;
-      chart.update();
     }
 
-    window.onload = () => {
-      loadData();
-      setInterval(loadData, 5000);
-    };
-  </script>
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = values;
+    chart.data.datasets[0].pointBackgroundColor = colors;
+    chart.update();
+  }
+
+  window.onload = () => {
+    loadData();
+    setInterval(loadData, 5000);
+  };
+</script>
 </body>
 </html>

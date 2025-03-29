@@ -103,14 +103,16 @@
     <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
     <div id="statusBox" class="status green">✅ Ventilatoarele funcționează normal!</div>
 
-    <!-- Legendă tricoloră -->
-    <div class="custom-legend">
-      <div class="legend-box">
-        <div class="legend-part green-part"></div>
-        <div class="legend-part yellow-part"></div>
-        <div class="legend-part red-part"></div>
-      </div>
-    </div>
+    <!-- Legendă tricoloră compactă, stil original -->
+<div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 10px;">
+  <div style="display: flex; width: 60px; height: 15px; border-radius: 3px; overflow: hidden; border: 1px solid #ccc;">
+    <div style="flex: 1; background-color: #28a745;"></div>
+    <div style="flex: 1; background-color: #ffc107;"></div>
+    <div style="flex: 1; background-color: #dc3545;"></div>
+  </div>
+  <span style="font-weight: bold; font-size: 14px;">Nivel dB</span>
+</div>
+
 
     <canvas id="decibelChart"></canvas>
 

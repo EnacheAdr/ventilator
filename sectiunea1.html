@@ -86,10 +86,10 @@
     <div class="select-title">Alegeți o dată pentru a verifica istoricul funcționării ventilatoarelor:</div>
     <select id="ziSelector" onchange="deseneazaGraficul()"></select>
 
-    <!-- Grafic scrollabil orizontal -->
+    <!-- Grafic aerisit + scroll -->
     <div style="overflow-x: auto; width: 100%;">
       <div style="width: 1200px;">
-        <canvas id="grafic" height="300"></canvas>
+        <canvas id="grafic" height="200"></canvas>
       </div>
     </div>
 
@@ -183,7 +183,7 @@
             data: valori,
             borderColor: "#888",
             pointBackgroundColor: colors,
-            pointRadius: 4,
+            pointRadius: 2.5,
             tension: 0.3
           }]
         },

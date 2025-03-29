@@ -41,7 +41,7 @@
       background: rgba(255,255,255,0.95);
       border-radius: 20px;
       width: 90%;
-      max-width: 700px;
+      max-width: 800px;
       margin: 20px auto;
       padding: 30px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -63,12 +63,18 @@
     select {
       font-size: 16px;
       padding: 8px;
-      margin-bottom: 20px;
+      margin: 10px 0 20px;
       border-radius: 8px;
     }
 
+    .select-title {
+      font-size: 16px;
+      margin-top: 15px;
+    }
+
     canvas {
-      margin-top: 10px;
+      max-width: 100%;
+      overflow-x: auto;
     }
   </style>
 </head>
@@ -82,10 +88,12 @@
     <h2>Monitorizare Ventilatoare - Secțiunea 1</h2>
     <div id="statusBox" class="status green">✅ Ventilatoarele funcționează normal!</div>
 
+    <div class="select-title">Alegeți o dată pentru a verifica istoricul funcționării ventilatoarelor:</div>
     <select id="ziSelector" onchange="deseneazaGraficul()"></select>
-    <canvas id="grafic" width="600" height="300"></canvas>
 
-    <br>
+    <canvas id="grafic" height="300"></canvas>
+
+    <br><br>
     <a href="index.html" class="button gray">🔙 Înapoi la Meniu</a>
   </div>
 
@@ -182,8 +190,15 @@
         options: {
           plugins: { legend: { display: false } },
           scales: {
-            x: { title: { display: true, text: "Oră" } },
-            y: { suggestedMin: 30, suggestedMax: 80, title: { display: true, text: "dB" } }
+            x: {
+              title: { display: true, text: "Oră" },
+              ticks: { maxRotation: 90, minRotation: 45 }
+            },
+            y: {
+              suggestedMin: 30,
+              suggestedMax: 80,
+              title: { display: true, text: "dB" }
+            }
           }
         }
       });
@@ -193,25 +208,19 @@
 
     function actualizeazaStatus(valori) {
       const box = document.getElementById("statusBox");
-      let maxConsec = 0, count = 0;
-      for (let val of valori) {
-        if (val > 50) {
-          count++;
-          maxConsec = Math.max(maxConsec, count);
-        } else {
-          count = 0;
-        }
+
+      let count = 0;
+      for (let i = valori.length - 1; i >= 0; i--) {
+        if (valori[i] > 50) count++;
+        else break;
       }
 
-      if (maxConsec >= 6) {
+      if (count >= 6) {
         box.className = "status red";
         box.innerHTML = "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea deteriorării. Verificare necesară!";
-      } else if (maxConsec >= 4) {
+      } else if (count >= 2) {
         box.className = "status yellow";
-        box.innerHTML = "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Verificare urgentă recomandată!";
-      } else if (maxConsec >= 2) {
-        box.className = "status yellow";
-        box.innerHTML = "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizare recomandată.";
+        box.innerHTML = "⚠️ Unul din ventilatoare prezintă fluctuații sau semne de uzură. Monitorizare recomandată.";
       } else {
         box.className = "status green";
         box.innerHTML = "✅ Ventilatoarele funcționează normal!";

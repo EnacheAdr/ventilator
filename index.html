@@ -1,44 +1,70 @@
 <!DOCTYPE html>
 <html lang="ro">
 <head>
-  <meta charset="UTF-8">
-  <title>Meniu Ventilatoare</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Monitorizare Ventilatoare</title>
   <style>
     body {
-      text-align: center;
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding-top: 100px;
+      text-align: center;
+      background: url('background.jpg') no-repeat center center fixed;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      background: white;
+      width: 90%;
+      max-width: 500px;
+      margin: 100px auto;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 30px;
     }
     .button {
-      padding: 15px 25px;
-      font-size: 20px;
+      display: block;
+      width: 100%;
+      padding: 15px;
+      font-size: 18px;
       font-weight: bold;
+      border: none;
       border-radius: 10px;
+      margin: 10px 0;
       text-decoration: none;
       color: white;
+      background: #808080;
       transition: 0.3s;
-      box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2);
-      display: inline-block;
-      margin: 20px;
     }
-    .green { background: #28a745; }
-    .yellow { background: #ffc107; color: black; }
-    .red { background: #dc3545; }
-    .button:hover { transform: scale(1.05); }
+    .button.green { background: #28a745; }
+    .button.yellow { background: #ffc107; color: black; }
+    .button.red { background: #dc3545; }
+    .button:hover { transform: scale(1.03); }
   </style>
 </head>
 <body>
-  <h1>Meniu Monitorizare Ventilatoare</h1>
+  <div class="container">
+    <h1>Monitorizare Ventilatoare</h1>
 
-  <!-- Buton dinamic pentru sectiunea 1 -->
-  <a id="sectiune1" href="sectiunea1.html" class="button green">Secțiunea 1</a>
+    <!-- Sectiune 1 dinamic -->
+    <a id="sectiune1" href="sectiunea1.html" class="button green">📊 Secțiunea 1</a>
+
+    <!-- Sectiuni inactive -->
+    <a class="button" href="#">📊 Secțiunea 2 (inactiv)</a>
+    <a class="button" href="#">📊 Secțiunea 3 (inactiv)</a>
+    <a class="button" href="#">📊 Secțiunea 4 (inactiv)</a>
+    <a class="button" href="#">📊 Secțiunea 5 (inactiv)</a>
+  </div>
 
   <script>
     const firebaseURL = "https://ventilator-5070b-default-rtdb.firebaseio.com/NivelZgomot";
     const auth = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
 
-    async function updateButtonStatus() {
+    async function updateSectiune1Status() {
       try {
         const res = await fetch(`${firebaseURL}/status.json?auth=${auth}`);
         const status = await res.json();
@@ -46,13 +72,13 @@
 
         if (status === "oprit_automat") {
           buton.className = "button red";
-          buton.textContent = "Secțiunea 1 ❌";
+          buton.textContent = "❌ Secțiunea 1";
         } else if (status === "alerta1" || status === "alerta2") {
           buton.className = "button yellow";
-          buton.textContent = "Secțiunea 1 ⚠️";
+          buton.textContent = "⚠️ Secțiunea 1";
         } else {
           buton.className = "button green";
-          buton.textContent = "Secțiunea 1";
+          buton.textContent = "✅ Secțiunea 1";
         }
       } catch (err) {
         console.error("Eroare Firebase:", err);
@@ -60,8 +86,8 @@
     }
 
     window.onload = () => {
-      updateButtonStatus();
-      setInterval(updateButtonStatus, 5000);
+      updateSectiune1Status();
+      setInterval(updateSectiune1Status, 5000);
     };
   </script>
 </body>

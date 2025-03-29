@@ -87,13 +87,13 @@
         statusBox.textContent = "✅ Ventilatoarele funcționează normal!";
       } else if (status === "alerta1") {
         statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Unul din ventilatoare prezintă fluctuații. Monitorizați cu atenție. Estimare: defect în 3 ore.";
+        statusBox.textContent = "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 3 ore.";
       } else if (status === "alerta2") {
         statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Uzură accentuată detectată. Verificare urgentă necesară. Estimare: defect în 2 ore.";
+        statusBox.textContent = "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Verificare urgentă! Estimare: defect în 2 ore.";
       } else if (status === "oprit_automat") {
         statusBox.className = "status red";
-        statusBox.textContent = "❌ Ventilatoare oprite automat pentru prevenire. Verificare necesară! Estimare defect: 1 oră.";
+        statusBox.textContent = "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea deteriorării. Verificare necesară! În cazul pornirii manuale, ventilatorul se estimează că se va defecta într-o oră.";
       }
     }
 
@@ -138,21 +138,19 @@
 
       const labels = [];
       const values = [];
-      let consecutive = 0;
 
       Object.entries(citiri).sort().forEach(([t, v]) => {
         labels.push(t.slice(11, 19));
         values.push(v);
       });
 
-      // Determină culoarea în funcție de ultimele citiri
       const last = values.slice(-6);
-      consecutive = last.filter(v => v > 50).length;
+      const countOver50 = last.filter(v => v > 50).length;
 
-      if (consecutive >= 6) {
+      if (countOver50 >= 6) {
         chart.data.datasets[0].borderColor = "red";
         chart.data.datasets[0].backgroundColor = "rgba(255, 0, 0, 0.2)";
-      } else if (consecutive >= 2) {
+      } else if (countOver50 >= 2) {
         chart.data.datasets[0].borderColor = "orange";
         chart.data.datasets[0].backgroundColor = "rgba(255, 165, 0, 0.2)";
       } else {

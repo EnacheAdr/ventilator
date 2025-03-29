@@ -25,7 +25,6 @@
     .green { background: #28a745; }
     .yellow { background: #ffc107; color: black; }
     .red { background: #dc3545; }
-    .gray { background: #6c757d; }
     .button:hover { transform: scale(1.05); }
   </style>
 </head>
@@ -41,19 +40,17 @@
 
     async function updateButtonStatus() {
       try {
-        const res = await fetch(`${firebaseURL}.json?auth=${auth}`);
-        const data = await res.json();
-        const status = data.status || "normal";
-        const comanda = data.comanda || "";
+        const res = await fetch(`${firebaseURL}/status.json?auth=${auth}`);
+        const status = await res.json();
         const buton = document.getElementById("sectiune1");
 
-        if (comanda === "oprire" || status === "oprit_automat") {
-          buton.className = "button gray";
-          buton.textContent = "Secțiunea 1 - inactivă";
+        if (status === "oprit_automat") {
+          buton.className = "button red";
+          buton.textContent = "Secțiunea 1 ❌";
         } else if (status === "alerta1" || status === "alerta2") {
           buton.className = "button yellow";
           buton.textContent = "Secțiunea 1 ⚠️";
-        } else if (status === "normal") {
+        } else {
           buton.className = "button green";
           buton.textContent = "Secțiunea 1";
         }

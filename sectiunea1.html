@@ -77,29 +77,37 @@
       position: relative;
     }
 
-    .legend {
+    .tricolor-box {
+      width: 60px;
+      height: 18px;
+      background: linear-gradient(to right, #28a745 33%, #ffc107 33% 66%, #dc3545 66%);
+      display: inline-block;
+      vertical-align: middle;
+      border-radius: 4px;
+      margin-right: 8px;
+    }
+
+    .legend-label {
+      font-weight: bold;
+      font-size: 14px;
       display: flex;
       justify-content: center;
-      margin-bottom: 15px;
-      gap: 10px;
-    }
-
-    .legend-item {
-      display: flex;
       align-items: center;
-      font-size: 14px;
+      gap: 8px;
+      margin-bottom: 10px;
     }
 
-    .color-box {
-      width: 15px;
-      height: 15px;
-      margin-right: 5px;
-      border-radius: 3px;
+    select {
+      font-size: 16px;
+      padding: 8px;
+      margin: 10px 0 20px;
+      border-radius: 8px;
     }
 
-    .green-box { background-color: #28a745; }
-    .yellow-box { background-color: #ffc107; }
-    .red-box { background-color: #dc3545; }
+    .select-title {
+      font-size: 16px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -112,11 +120,13 @@
     <h1>Monitorizare Ventilatoare - Secțiunea 1</h1>
     <div id="statusBox" class="status green">✅ Ventilatoarele funcționează normal!</div>
 
-    <div class="legend">
-      <div class="legend-item"><div class="color-box green-box"></div>Normal</div>
-      <div class="legend-item"><div class="color-box yellow-box"></div>Alertă</div>
-      <div class="legend-item"><div class="color-box red-box"></div>Oprire automată</div>
+    <div class="legend-label">
+      <div class="tricolor-box"></div>
+      Nivel dB
     </div>
+
+    <div class="select-title">Alegeți o dată pentru a verifica istoricul funcționării ventilatoarelor:</div>
+    <select id="ziSelector" onchange="deseneazaGraficul()"></select>
 
     <div id="chartWrapper">
       <div id="chartContainer">
@@ -132,6 +142,8 @@
     const auth = "DTgxk3pUhOHkQxn39j4784R3WN208FPNqwpevLVn";
 
     const statusBox = document.getElementById("statusBox");
+    let toateCitirile = {};
+    let chart;
 
     function updateStatusText(status) {
       if (status === "normal") {
@@ -157,42 +169,10 @@
       });
     }
 
-    const ctx = document.getElementById("decibelChart").getContext("2d");
-    const chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: [],
-        datasets: [{
-          label: "Nivel dB",
-          data: [],
-          pointBackgroundColor: [],
-          borderColor: "#888",
-          pointRadius: 3,
-          tension: 0.3
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: {
-              font: { size: 14 }
-            }
-          }
-        },
-        scales: {
-          x: {
-            title: { display: true, text: "Timp (UTC)" }
-          },
-          y: {
-            title: { display: true, text: "dB" },
-            suggestedMin: 30,
-            suggestedMax: 80
-          }
-        }
-      }
-    });
+    function formatDateKey(dateStr) {
+      const d = new Date(dateStr);
+      return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+    }
 
     async function loadData() {
       const res = await fetch(`${firebaseURL}.json?auth=${auth}`);
@@ -201,36 +181,95 @@
       const status = data.status || "normal";
       updateStatusText(status);
 
-      const entries = Object.entries(citiri).sort();
-      const labels = entries.map(([t, _]) => t.slice(11, 19));
-      const values = entries.map(([_, v]) => v);
+      toateCitirile = {};
+      for (const [timestamp, valoare] of Object.entries(citiri)) {
+        const zi = formatDateKey(timestamp);
+        if (!toateCitirile[zi]) toateCitirile[zi] = [];
+        toateCitirile[zi].push({ timp: timestamp, valoare });
+      }
 
-      const colors = new Array(values.length).fill("green");
+      populateDropdown();
+      deseneazaGraficul();
+    }
+
+    function populateDropdown() {
+      const selector = document.getElementById("ziSelector");
+      selector.innerHTML = "";
+      const zile = Object.keys(toateCitirile).sort().slice(-7); // ultimele 7 zile
+      zile.forEach(zi => {
+        const opt = document.createElement("option");
+        const [y,m,d] = zi.split("-");
+        opt.value = zi;
+        opt.text = `${d}.${m}.${y}`;
+        selector.appendChild(opt);
+      });
+    }
+
+    function deseneazaGraficul() {
+      const zi = document.getElementById("ziSelector").value;
+      const date = toateCitirile[zi] || [];
+
+      const labels = date.map(p => {
+        const d = new Date(p.timp);
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+      });
+
+      const valori = date.map(p => p.valoare);
+      const colors = new Array(valori.length).fill("green");
 
       let i = 0;
-      while (i < values.length) {
-        if (values[i] > 50) {
+      while (i < valori.length) {
+        if (valori[i] > 50) {
           let start = i;
-          while (i < values.length && values[i] > 50) i++;
+          while (i < valori.length && valori[i] > 50) i++;
           let count = i - start;
           let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
-          for (let j = start; j < i; j++) {
-            colors[j] = color;
-          }
+          for (let j = start; j < i; j++) colors[j] = color;
         } else {
           i++;
         }
       }
 
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = values;
-      chart.data.datasets[0].pointBackgroundColor = colors;
-      chart.update();
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("decibelChart").getContext("2d");
+      chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Nivel dB",
+            data: valori,
+            pointBackgroundColor: colors,
+            borderColor: "#888",
+            pointRadius: 3,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "Timp (UTC)" }
+            },
+            y: {
+              title: { display: true, text: "dB" },
+              suggestedMin: 30,
+              suggestedMax: 80
+            }
+          }
+        }
+      });
     }
 
     window.onload = () => {
       loadData();
-      setInterval(loadData, 5000);
+      setInterval(loadData, 10000);
     };
   </script>
 </body>

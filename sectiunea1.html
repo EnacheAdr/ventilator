@@ -253,7 +253,7 @@
           let start = i;
           while (i < valori.length && valori[i] > 50) i++;
           let count = i - start;
-          let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
+          let color = count >= 6 ? "red" : "orange";
           for (let j = start; j < i; j++) colors[j] = color;
         } else {
           i++;

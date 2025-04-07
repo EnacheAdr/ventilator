@@ -6,10 +6,7 @@
   <title>Monitorizare Ventilatoare - Secțiunea 1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
       text-align: center;
@@ -24,7 +21,6 @@
       width: 100%;
       min-height: 100vh;
     }
-
     .header {
       width: 100%;
       max-width: 700px;
@@ -34,7 +30,6 @@
       flex-wrap: wrap;
       gap: 10px;
     }
-
     .container {
       width: 90%;
       max-width: 700px;
@@ -45,7 +40,6 @@
       text-align: center;
       margin: 20px auto;
     }
-
     .status {
       font-size: 18px;
       font-weight: bold;
@@ -54,7 +48,6 @@
       margin: 20px 0 10px;
       color: white;
     }
-
     .green { background: #28a745; }
     .yellow { background: #ffc107; color: black; }
     .red { background: #dc3545; }
@@ -174,21 +167,18 @@
     const statusBox = document.getElementById("statusBox");
     let toateCitirile = {};
     let chart;
+    let ziSelectataManual = null;
 
     function updateStatusText(status) {
-      if (status === "normal") {
-        statusBox.className = "status green";
-        statusBox.textContent = "✅ Ventilatoarele funcționează normal!";
-      } else if (status === "alerta1") {
-        statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 3 ore.";
-      } else if (status === "alerta2") {
-        statusBox.className = "status yellow";
-        statusBox.textContent = "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Se recomandă verificare urgentă. Estimare: defect în 2 ore.";
-      } else if (status === "oprit_automat") {
-        statusBox.className = "status red";
-        statusBox.textContent = "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea defecțiunii. Verificare necesară! În cazul pornirii manuale, se estimează ca ventilatorul în cauză va ceda în aproximativ 1 oră.";
-      }
+      const mesaje = {
+        normal: "✅ Ventilatoarele funcționează normal!",
+        alerta1: "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 3 ore.",
+        alerta2: "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Se recomandă verificare urgentă. Estimare: defect în 2 ore.",
+        oprit_automat: "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea defecțiunii. Verificare necesară! În cazul pornirii manuale, se estimează ca ventilatorul în cauză va ceda în aproximativ 1 oră."
+      };
+
+      statusBox.className = "status " + (status === "normal" ? "green" : status === "oprit_automat" ? "red" : "yellow");
+      statusBox.textContent = mesaje[status] || mesaje["normal"];
     }
 
     function sendCommand(cmd) {
@@ -219,16 +209,23 @@
       }
 
       populateDropdown();
+
+      if (ziSelectataManual) {
+        document.getElementById("ziSelector").value = ziSelectataManual;
+      } else {
+        ziSelectataManual = document.getElementById("ziSelector").value;
+      }
+
       deseneazaGraficul();
     }
 
     function populateDropdown() {
       const selector = document.getElementById("ziSelector");
-      selector.innerHTML = "";
       const zile = Object.keys(toateCitirile).sort().slice(-7);
+      selector.innerHTML = "";
       zile.forEach(zi => {
         const opt = document.createElement("option");
-        const [y,m,d] = zi.split("-");
+        const [y, m, d] = zi.split("-");
         opt.value = zi;
         opt.text = `${d}.${m}.${y}`;
         selector.appendChild(opt);
@@ -237,11 +234,12 @@
 
     function deseneazaGraficul() {
       const zi = document.getElementById("ziSelector").value;
+      ziSelectataManual = zi;
       const date = toateCitirile[zi] || [];
 
       const labels = date.map(p => {
         const d = new Date(p.timp);
-        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
       });
 
       const valori = date.map(p => p.valoare);
@@ -254,9 +252,7 @@
           while (i < valori.length && valori[i] > 50) i++;
           let count = i - start;
           let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
-          for (let j = start; j < i; j++) {
-            colors[j] = color;
-          }
+          for (let j = start; j < i; j++) colors[j] = color;
         } else {
           colors[i] = "green";
           i++;
@@ -268,7 +264,7 @@
       chart = new Chart(ctx, {
         type: "line",
         data: {
-          labels: labels,
+          labels,
           datasets: [{
             label: "Nivel dB",
             data: valori,
@@ -282,9 +278,7 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              display: false
-            }
+            legend: { display: false }
           },
           scales: {
             x: {
@@ -302,7 +296,7 @@
 
     window.onload = () => {
       loadData();
-      setInterval(loadData, 10000);
+      setInterval(loadData, 10000); // actualizează statusul, dar păstrează selecția
     };
   </script>
 </body>

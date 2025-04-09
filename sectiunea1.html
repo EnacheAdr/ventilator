@@ -237,25 +237,34 @@
       ziSelectataManual = zi;
       const date = toateCitirile[zi] || [];
 
-      const labels = date.map(p => {
-        const d = new Date(p.timp);
-        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
-      });
+      const labels = [];
+      const valori = [];
+      const colors = [];
 
-      const valori = date.map(p => p.valoare);
-      const colors = new Array(valori.length).fill("green");
+      let consecutive = 0;
+      let stop = false;
 
-      let i = 0;
-      while (i < valori.length) {
-        if (valori[i] > 50) {
-          let start = i;
-          while (i < valori.length && valori[i] > 50) i++;
-          let count = i - start;
-          let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
-          for (let j = start; j < i; j++) colors[j] = color;
+      for (let i = 0; i < date.length; i++) {
+        const dB = date[i].valoare;
+
+        if (stop) continue;
+
+        labels.push(new Date(date[i].timp).toLocaleTimeString('ro-RO', { hour12: false }));
+        valori.push(dB);
+
+        if (dB > 50) {
+          consecutive++;
         } else {
-          colors[i] = "green";
-          i++;
+          consecutive = 0;
+        }
+
+        if (consecutive >= 6) {
+          colors.push("red");
+          stop = true;
+        } else if (consecutive >= 2) {
+          colors.push("orange");
+        } else {
+          colors.push("green");
         }
       }
 
@@ -296,7 +305,7 @@
 
     window.onload = () => {
       loadData();
-      setInterval(loadData, 10000); // actualizează statusul, dar păstrează selecția
+      setInterval(loadData, 10000);
     };
   </script>
 </body>

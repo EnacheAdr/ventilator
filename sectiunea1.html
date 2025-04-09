@@ -172,9 +172,9 @@
     function updateStatusText(status) {
       const mesaje = {
         normal: "✅ Ventilatoarele funcționează normal!",
-        alerta1: "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 3 ore.",
-        alerta2: "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Se recomandă verificare urgentă. Estimare: defect în 2 ore.",
-        oprit_automat: "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea defecțiunii. Verificare necesară! În cazul pornirii manuale, se estimează ca ventilatorul în cauză va ceda în aproximativ 1 oră."
+        alerta1: "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 2 ore.",
+        alerta2: "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Se recomandă verificare urgentă. Estimare: defect într-o oră.",
+        oprit_automat: "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea defecțiunii. Verificare necesară! În cazul pornirii manuale, se estimează ca ventilatorul în cauză va ceda în aproximativ 30 min."
       };
 
       statusBox.className = "status " + (status === "normal" ? "green" : status === "oprit_automat" ? "red" : "yellow");

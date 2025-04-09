@@ -172,11 +172,10 @@
     function updateStatusText(status) {
       const mesaje = {
         normal: "✅ Ventilatoarele funcționează normal!",
-        alerta1: "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 2 ore.",
-        alerta2: "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Se recomandă verificare urgentă. Estimare: defect într-o oră.",
-        oprit_automat: "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea defecțiunii. Verificare necesară! În cazul pornirii manuale, se estimează ca ventilatorul în cauză va ceda în aproximativ 30 min."
+        alerta1: "⚠️ Unul din ventilatoare prezintă fluctuații. Estimare: defect în 2 ore.",
+        alerta2: "⚠️ Uzură accentuată. Estimare: defect într-o oră.",
+        oprit_automat: "❌ Ventilatoare oprite automat. Estimare: defect în 30 min."
       };
-
       statusBox.className = "status " + (status === "normal" ? "green" : status === "oprit_automat" ? "red" : "yellow");
       statusBox.textContent = mesaje[status] || mesaje["normal"];
     }
@@ -242,26 +241,31 @@
       const colors = [];
 
       let consecutive = 0;
-      let stop = false;
+      let oprireGasita = false;
 
       for (let i = 0; i < date.length; i++) {
-        const dB = date[i].valoare;
+        const d = new Date(date[i].timp);
+        const label = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        const valoare = date[i].valoare;
 
-        if (stop) continue;
+        if (oprireGasita) break;
 
-        labels.push(new Date(date[i].timp).toLocaleTimeString('ro-RO', { hour12: false }));
-        valori.push(dB);
+        labels.push(label);
+        valori.push(valoare);
 
-        if (dB > 50) {
+        if (valoare > 50) {
           consecutive++;
         } else {
           consecutive = 0;
         }
 
         if (consecutive >= 6) {
+          oprireGasita = true;
+        }
+
+        if (consecutive >= 6) {
           colors.push("red");
-          stop = true;
-        } else if (consecutive >= 2) {
+        } else if (consecutive >= 3) {
           colors.push("orange");
         } else {
           colors.push("green");
@@ -305,7 +309,7 @@
 
     window.onload = () => {
       loadData();
-      setInterval(loadData, 10000);
+      setInterval(loadData, 10000); // Refresh graficul și statusul
     };
   </script>
 </body>

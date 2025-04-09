@@ -176,7 +176,6 @@
         alerta2: "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Se recomandă verificare urgentă. Estimare: defect într-o oră.",
         oprit_automat: "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea defecțiunii. Verificare necesară! În cazul pornirii manuale, se estimează ca ventilatorul în cauză va ceda în aproximativ 30 min."
       };
-
       statusBox.className = "status " + (status === "normal" ? "green" : status === "oprit_automat" ? "red" : "yellow");
       statusBox.textContent = mesaje[status] || mesaje["normal"];
     }
@@ -243,6 +242,7 @@
 
       let consecutive = 0;
       let blocat = false;
+      let blocareInceputa = false;
       let statusActual = statusBox.classList.contains("red") ? "oprit_automat" : "normal";
 
       for (let i = 0; i < date.length; i++) {
@@ -250,7 +250,7 @@
         const ora = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
         const val = date[i].valoare;
 
-        if (statusActual === "oprit_automat" && blocat) continue;
+        if (blocat && statusActual === "oprit_automat") continue;
 
         labels.push(ora);
         valori.push(val);
@@ -259,7 +259,7 @@
           consecutive++;
           if (consecutive >= 6) {
             colors.push("red");
-            blocat = true;
+            if (!blocareInceputa) blocareInceputa = true;
           } else if (consecutive >= 2) {
             colors.push("orange");
           } else {
@@ -270,9 +270,13 @@
           colors.push("green");
         }
 
-        // Dacă a fost blocat anterior, iar statusul este acum normal -> resetare
+        if (blocareInceputa && consecutive >= 6 && colors.filter(c => c === "red").length >= 6) {
+          blocat = true;
+        }
+
         if (statusActual === "normal" && blocat) {
           blocat = false;
+          blocareInceputa = false;
           consecutive = 0;
         }
       }

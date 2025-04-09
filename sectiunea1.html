@@ -172,10 +172,11 @@
     function updateStatusText(status) {
       const mesaje = {
         normal: "✅ Ventilatoarele funcționează normal!",
-        alerta1: "⚠️ Unul din ventilatoare prezintă fluctuații. Estimare: defect în 2 ore.",
-        alerta2: "⚠️ Uzură accentuată. Estimare: defect într-o oră.",
-        oprit_automat: "❌ Ventilatoare oprite automat. Estimare: defect în 30 min."
+        alerta1: "⚠️ Unul din ventilatoare prezintă fluctuații de funcționare. Monitorizați cu atenție. Estimare: defect în 2 ore.",
+        alerta2: "⚠️ Unul din ventilatoare prezintă semne accentuate de uzură. Se recomandă verificare urgentă. Estimare: defect într-o oră.",
+        oprit_automat: "❌ Ventilatoare din această secțiune oprite automat pentru prevenirea defecțiunii. Verificare necesară! În cazul pornirii manuale, se estimează ca ventilatorul în cauză va ceda în aproximativ 30 min."
       };
+
       statusBox.className = "status " + (status === "normal" ? "green" : status === "oprit_automat" ? "red" : "yellow");
       statusBox.textContent = mesaje[status] || mesaje["normal"];
     }
@@ -240,36 +241,41 @@
       const valori = [];
       const colors = [];
 
-      let consecutive = 0;
-      let oprireGasita = false;
+      let consecutiveCount = 0;
+      let stopAfter = false;
+      let oprireDetectata = false;
 
       for (let i = 0; i < date.length; i++) {
-        const d = new Date(date[i].timp);
-        const label = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
         const valoare = date[i].valoare;
+        const timp = date[i].timp;
+        const d = new Date(timp);
+        const ora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 
-        if (oprireGasita) break;
+        if (statusBox.classList.contains("red") && !oprireDetectata) {
+          consecutiveCount = 0;
+          stopAfter = false;
+          oprireDetectata = true;
+        }
 
-        labels.push(label);
-        valori.push(valoare);
+        if (stopAfter && !oprireDetectata) continue;
 
         if (valoare > 50) {
-          consecutive++;
+          consecutiveCount++;
         } else {
-          consecutive = 0;
+          consecutiveCount = 0;
         }
 
-        if (consecutive >= 6) {
-          oprireGasita = true;
+        let color = "green";
+        if (consecutiveCount >= 6) {
+          color = "red";
+          stopAfter = true;
+        } else if (consecutiveCount >= 2) {
+          color = "orange";
         }
 
-        if (consecutive >= 6) {
-          colors.push("red");
-        } else if (consecutive >= 3) {
-          colors.push("orange");
-        } else {
-          colors.push("green");
-        }
+        labels.push(ora);
+        valori.push(valoare);
+        colors.push(color);
       }
 
       if (chart) chart.destroy();
@@ -309,7 +315,7 @@
 
     window.onload = () => {
       loadData();
-      setInterval(loadData, 10000); // Refresh graficul și statusul
+      setInterval(loadData, 10000);
     };
   </script>
 </body>

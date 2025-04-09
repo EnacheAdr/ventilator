@@ -237,45 +237,26 @@
       ziSelectataManual = zi;
       const date = toateCitirile[zi] || [];
 
-      const labels = [];
-      const valori = [];
-      const colors = [];
+      const labels = date.map(p => {
+        const d = new Date(p.timp);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+      });
 
-      let consecutiveCount = 0;
-      let stopAfter = false;
-      let oprireDetectata = false;
+      const valori = date.map(p => p.valoare);
+      const colors = new Array(valori.length).fill("green");
 
-      for (let i = 0; i < date.length; i++) {
-        const valoare = date[i].valoare;
-        const timp = date[i].timp;
-        const d = new Date(timp);
-        const ora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-
-        if (statusBox.classList.contains("red") && !oprireDetectata) {
-          consecutiveCount = 0;
-          stopAfter = false;
-          oprireDetectata = true;
-        }
-
-        if (stopAfter && !oprireDetectata) continue;
-
-        if (valoare > 50) {
-          consecutiveCount++;
+      let i = 0;
+      while (i < valori.length) {
+        if (valori[i] > 50) {
+          let start = i;
+          while (i < valori.length && valori[i] > 50) i++;
+          let count = i - start;
+          let color = count >= 6 ? "red" : count >= 2 ? "orange" : "green";
+          for (let j = start; j < i; j++) colors[j] = color;
         } else {
-          consecutiveCount = 0;
+          colors[i] = "green";
+          i++;
         }
-
-        let color = "green";
-        if (consecutiveCount >= 6) {
-          color = "red";
-          stopAfter = true;
-        } else if (consecutiveCount >= 2) {
-          color = "orange";
-        }
-
-        labels.push(ora);
-        valori.push(valoare);
-        colors.push(color);
       }
 
       if (chart) chart.destroy();
@@ -315,7 +296,7 @@
 
     window.onload = () => {
       loadData();
-      setInterval(loadData, 10000);
+      setInterval(loadData, 10000); // actualizează statusul, dar păstrează selecția
     };
   </script>
 </body>
